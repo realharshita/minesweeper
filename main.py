@@ -1,5 +1,6 @@
 import tkinter as tk
 import random
+from tkinter import messagebox
 
 class MinesweeperGame:
     def __init__(self, master, rows=10, cols=10, mines=20):
@@ -10,6 +11,7 @@ class MinesweeperGame:
         
         self.board = [[0] * cols for _ in range(rows)]
         self.buttons = [[None] * cols for _ in range(rows)]
+        self.revealed_cells = 0
         
         self.create_widgets()
         self.place_mines()
@@ -25,7 +27,10 @@ class MinesweeperGame:
                                    command=lambda r=r, c=c: self.on_click(r, c))
                 button.grid(row=r, column=c)
                 self.buttons[r][c] = button
-    
+        
+        self.restart_button = tk.Button(self.master, text="Restart", command=self.restart_game)
+        self.restart_button.pack()
+
     def place_mines(self):
         mines_placed = 0
         while mines_placed < self.mines:
@@ -52,20 +57,42 @@ class MinesweeperGame:
         if self.board[r][c] == -1:
             self.buttons[r][c].config(text='*', bg='red')
             self.reveal_mines()
+            messagebox.showinfo("Game Over", "You clicked on a mine!")
         else:
             self.reveal_cell(r, c)
+            if self.check_win():
+                messagebox.showinfo("Congratulations", "You win!")
 
     def reveal_cell(self, r, c):
+        if self.buttons[r][c]['state'] == 'disabled':
+            return
         if self.board[r][c] == 0:
             self.buttons[r][c].config(text='', bg='light grey', state='disabled')
+            for dr, dc in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
+                rr, cc = r + dr, c + dc
+                if 0 <= rr < self.rows and 0 <= cc < self.cols:
+                    self.reveal_cell(rr, cc)
         else:
             self.buttons[r][c].config(text=str(self.board[r][c]), bg='light grey', state='disabled')
+        self.revealed_cells += 1
 
     def reveal_mines(self):
         for r in range(self.rows):
             for c in range(self.cols):
                 if self.board[r][c] == -1:
                     self.buttons[r][c].config(text='*', bg='red')
+
+    def check_win(self):
+        return self.revealed_cells == self.rows * self.cols - self.mines
+
+    def restart_game(self):
+        self.board = [[0] * self.cols for _ in range(self.rows)]
+        self.revealed_cells = 0
+        for r in range(self.rows):
+            for c in range(self.cols):
+                self.buttons[r][c].config(text='', bg='SystemButtonFace', state='normal')
+        self.place_mines()
+        self.calculate_adjacent_mines()
 
 def main():
     root = tk.Tk()
