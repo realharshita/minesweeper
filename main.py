@@ -11,6 +11,7 @@ class MinesweeperGame:
         
         self.board = [[0] * cols for _ in range(rows)]
         self.buttons = [[None] * cols for _ in range(rows)]
+        self.flags = 0
         self.revealed_cells = 0
         
         self.create_widgets()
@@ -23,11 +24,15 @@ class MinesweeperGame:
         
         for r in range(self.rows):
             for c in range(self.cols):
-                button = tk.Button(self.board_frame, width=2, height=1,
-                                   command=lambda r=r, c=c: self.on_click(r, c))
+                button = tk.Button(self.board_frame, width=2, height=1)
+                button.bind('<Button-1>', lambda e, r=r, c=c: self.on_left_click(r, c))
+                button.bind('<Button-3>', lambda e, r=r, c=c: self.on_right_click(r, c))
                 button.grid(row=r, column=c)
                 self.buttons[r][c] = button
         
+        self.mine_counter = tk.Label(self.master, text=f"Mines left: {self.mines - self.flags}")
+        self.mine_counter.pack()
+
         self.restart_button = tk.Button(self.master, text="Restart", command=self.restart_game)
         self.restart_button.pack()
 
@@ -53,7 +58,7 @@ class MinesweeperGame:
                         mine_count += 1
                 self.board[r][c] = mine_count
 
-    def on_click(self, r, c):
+    def on_left_click(self, r, c):
         if self.board[r][c] == -1:
             self.buttons[r][c].config(text='*', bg='red')
             self.reveal_mines()
@@ -62,6 +67,15 @@ class MinesweeperGame:
             self.reveal_cell(r, c)
             if self.check_win():
                 messagebox.showinfo("Congratulations", "You win!")
+
+    def on_right_click(self, r, c):
+        if self.buttons[r][c]['text'] == 'F':
+            self.buttons[r][c].config(text='', bg='SystemButtonFace')
+            self.flags -= 1
+        else:
+            self.buttons[r][c].config(text='F', bg='yellow')
+            self.flags += 1
+        self.mine_counter.config(text=f"Mines left: {self.mines - self.flags}")
 
     def reveal_cell(self, r, c):
         if self.buttons[r][c]['state'] == 'disabled':
@@ -88,11 +102,13 @@ class MinesweeperGame:
     def restart_game(self):
         self.board = [[0] * self.cols for _ in range(self.rows)]
         self.revealed_cells = 0
+        self.flags = 0
         for r in range(self.rows):
             for c in range(self.cols):
                 self.buttons[r][c].config(text='', bg='SystemButtonFace', state='normal')
         self.place_mines()
         self.calculate_adjacent_mines()
+        self.mine_counter.config(text=f"Mines left: {self.mines}")
 
 def main():
     root = tk.Tk()
