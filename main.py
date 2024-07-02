@@ -13,7 +13,9 @@ class MinesweeperGame:
         self.buttons = [[None] * cols for _ in range(rows)]
         self.flags = 0
         self.revealed_cells = 0
-        
+        self.timer_running = False
+        self.time_elapsed = 0
+
         self.create_widgets()
         self.place_mines()
         self.calculate_adjacent_mines()
@@ -33,8 +35,17 @@ class MinesweeperGame:
         self.mine_counter = tk.Label(self.master, text=f"Mines left: {self.mines - self.flags}")
         self.mine_counter.pack()
 
+        self.timer_label = tk.Label(self.master, text="Time: 0")
+        self.timer_label.pack()
+
         self.restart_button = tk.Button(self.master, text="Restart", command=self.restart_game)
         self.restart_button.pack()
+
+        self.pause_button = tk.Button(self.master, text="Pause", command=self.pause_timer)
+        self.pause_button.pack()
+
+        self.resume_button = tk.Button(self.master, text="Resume", command=self.resume_timer)
+        self.resume_button.pack()
 
     def place_mines(self):
         mines_placed = 0
@@ -59,13 +70,17 @@ class MinesweeperGame:
                 self.board[r][c] = mine_count
 
     def on_left_click(self, r, c):
+        if not self.timer_running:
+            self.start_timer()
         if self.board[r][c] == -1:
             self.buttons[r][c].config(text='*', bg='red')
             self.reveal_mines()
+            self.stop_timer()
             messagebox.showinfo("Game Over", "You clicked on a mine!")
         else:
             self.reveal_cell(r, c)
             if self.check_win():
+                self.stop_timer()
                 messagebox.showinfo("Congratulations", "You win!")
 
     def on_right_click(self, r, c):
@@ -103,12 +118,36 @@ class MinesweeperGame:
         self.board = [[0] * self.cols for _ in range(self.rows)]
         self.revealed_cells = 0
         self.flags = 0
+        self.time_elapsed = 0
+        self.timer_label.config(text="Time: 0")
+        self.timer_running = False
         for r in range(self.rows):
             for c in range(self.cols):
                 self.buttons[r][c].config(text='', bg='SystemButtonFace', state='normal')
         self.place_mines()
         self.calculate_adjacent_mines()
         self.mine_counter.config(text=f"Mines left: {self.mines}")
+
+    def start_timer(self):
+        self.timer_running = True
+        self.update_timer()
+
+    def stop_timer(self):
+        self.timer_running = False
+
+    def pause_timer(self):
+        self.timer_running = False
+
+    def resume_timer(self):
+        if not self.timer_running:
+            self.timer_running = True
+            self.update_timer()
+
+    def update_timer(self):
+        if self.timer_running:
+            self.time_elapsed += 1
+            self.timer_label.config(text=f"Time: {self.time_elapsed}")
+            self.master.after(1000, self.update_timer)
 
 def main():
     root = tk.Tk()
