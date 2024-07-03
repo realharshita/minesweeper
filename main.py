@@ -1,15 +1,15 @@
 import tkinter as tk
 import random
-from tkinter import messagebox
 import json
-import os
+from tkinter import messagebox
 
 class StartMenu:
     def __init__(self, master):
         self.master = master
         self.master.title("Minesweeper - Start Menu")
         self.difficulty = "Medium"
-
+        self.theme = "Light"
+        
         self.create_widgets()
 
     def create_widgets(self):
@@ -25,53 +25,112 @@ class StartMenu:
         tk.Radiobutton(self.difficulty_frame, text="Easy", variable=self.difficulty_var, value="Easy", font=("Helvetica", 12)).pack(side=tk.LEFT)
         tk.Radiobutton(self.difficulty_frame, text="Medium", variable=self.difficulty_var, value="Medium", font=("Helvetica", 12)).pack(side=tk.LEFT)
         tk.Radiobutton(self.difficulty_frame, text="Hard", variable=self.difficulty_var, value="Hard", font=("Helvetica", 12)).pack(side=tk.LEFT)
+        tk.Radiobutton(self.difficulty_frame, text="Custom", variable=self.difficulty_var, value="Custom", font=("Helvetica", 12)).pack(side=tk.LEFT)
+
+        self.theme_frame = tk.Frame(self.master)
+        self.theme_frame.pack(pady=10)
+
+        self.theme_var = tk.StringVar()
+        self.theme_var.set("Light")
+
+        tk.Radiobutton(self.theme_frame, text="Light Theme", variable=self.theme_var, value="Light", font=("Helvetica", 12)).pack(side=tk.LEFT)
+        tk.Radiobutton(self.theme_frame, text="Dark Theme", variable=self.theme_var, value="Dark", font=("Helvetica", 12)).pack(side=tk.LEFT)
 
         self.start_button = tk.Button(self.master, text="Start Game", command=self.start_game, font=("Helvetica", 14), bg="green", fg="white")
         self.start_button.pack(pady=20)
 
-        self.help_button = tk.Button(self.master, text="Help", command=self.show_help, font=("Helvetica", 12), bg="blue", fg="white")
-        self.help_button.pack(pady=5)
+        self.help_button = tk.Button(self.master, text="Help", command=self.show_help, font=("Helvetica", 14), bg="blue", fg="white")
+        self.help_button.pack(pady=10)
 
     def start_game(self):
         self.difficulty = self.difficulty_var.get()
-        self.master.destroy()
-        root = tk.Tk()
-        MinesweeperGame(root, self.difficulty)
-        root.mainloop()
+        self.theme = self.theme_var.get()
+        if self.difficulty == "Custom":
+            self.show_custom_difficulty_window()
+        else:
+            self.master.destroy()
+            root = tk.Tk()
+            MinesweeperGame(root, self.difficulty, self.theme)
+            root.mainloop()
 
     def show_help(self):
-        help_window = tk.Toplevel(self.master)
-        HelpMenu(help_window)
+        HelpMenu(self.master)
+
+    def show_custom_difficulty_window(self):
+        self.custom_window = tk.Toplevel(self.master)
+        self.custom_window.title("Custom Difficulty")
+
+        tk.Label(self.custom_window, text="Rows:", font=("Helvetica", 12)).pack(pady=5)
+        self.rows_entry = tk.Entry(self.custom_window, font=("Helvetica", 12))
+        self.rows_entry.pack(pady=5)
+
+        tk.Label(self.custom_window, text="Columns:", font=("Helvetica", 12)).pack(pady=5)
+        self.cols_entry = tk.Entry(self.custom_window, font=("Helvetica", 12))
+        self.cols_entry.pack(pady=5)
+
+        tk.Label(self.custom_window, text="Mines:", font=("Helvetica", 12)).pack(pady=5)
+        self.mines_entry = tk.Entry(self.custom_window, font=("Helvetica", 12))
+        self.mines_entry.pack(pady=5)
+
+        self.custom_start_button = tk.Button(self.custom_window, text="Start", command=self.start_custom_game, font=("Helvetica", 12), bg="green", fg="white")
+        self.custom_start_button.pack(pady=10)
+
+    def start_custom_game(self):
+        try:
+            rows = int(self.rows_entry.get())
+            cols = int(self.cols_entry.get())
+            mines = int(self.mines_entry.get())
+            if rows > 0 and cols > 0 and mines > 0:
+                self.custom_window.destroy()
+                self.master.destroy()
+                root = tk.Tk()
+                MinesweeperGame(root, self.difficulty, self.theme, custom_rows=rows, custom_cols=cols, custom_mines=mines)
+                root.mainloop()
+            else:
+                messagebox.showerror("Invalid Input", "Rows, Columns, and Mines must be positive integers.")
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter valid integers for Rows, Columns, and Mines.")
 
 class HelpMenu:
     def __init__(self, master):
-        self.master = master
-        self.master.title("Minesweeper - Help")
+        self.help_window = tk.Toplevel(master)
+        self.help_window.title("Help")
 
-        instructions = (
-            "Welcome to Minesweeper!\n\n"
-            "The goal of the game is to reveal all the cells without mines.\n"
-            "Left-click to reveal a cell.\n"
-            "Right-click to flag/unflag a cell as a mine.\n\n"
-            "Difficulty Levels:\n"
-            "Easy: 8x8 grid with 10 mines\n"
-            "Medium: 10x10 grid with 20 mines\n"
-            "Hard: 12x12 grid with 30 mines\n\n"
-            "Good luck!"
-        )
+        help_text = """
+        Welcome to Minesweeper!
 
-        self.label = tk.Label(self.master, text=instructions, font=("Helvetica", 12), justify=tk.LEFT)
-        self.label.pack(pady=10, padx=10)
+        Objective:
+        - Uncover all the cells that do not contain mines.
 
-        self.close_button = tk.Button(self.master, text="Close", command=self.master.destroy, font=("Helvetica", 12), bg="red", fg="white")
+        How to Play:
+        - Left-click to reveal a cell.
+        - Right-click to flag/unflag a cell as a mine.
+        - Reveal all non-mine cells to win.
+
+        Buttons:
+        - Start Game: Begin a new game with selected difficulty and theme.
+        - Restart: Restart the current game.
+        - Pause: Pause the timer.
+        - Resume: Resume the timer.
+        - Help: Show this help menu.
+
+        Good luck!
+        """
+        self.help_label = tk.Label(self.help_window, text=help_text, font=("Helvetica", 12), justify=tk.LEFT)
+        self.help_label.pack(pady=10, padx=10)
+
+        self.close_button = tk.Button(self.help_window, text="Close", command=self.help_window.destroy, font=("Helvetica", 12), bg="red", fg="white")
         self.close_button.pack(pady=10)
 
 class MinesweeperGame:
-    def __init__(self, master, difficulty):
+    def __init__(self, master, difficulty, theme, custom_rows=None, custom_cols=None, custom_mines=None):
         self.master = master
         self.master.title("Minesweeper")
 
-        self.set_difficulty(difficulty)
+        self.theme = theme
+        self.set_theme()
+        
+        self.set_difficulty(difficulty, custom_rows, custom_cols, custom_mines)
         
         self.board = [[0] * self.cols for _ in range(self.rows)]
         self.buttons = [[None] * self.cols for _ in range(self.rows)]
@@ -85,7 +144,18 @@ class MinesweeperGame:
         self.place_mines()
         self.calculate_adjacent_mines()
 
-    def set_difficulty(self, difficulty):
+    def set_theme(self):
+        if self.theme == "Light":
+            self.bg_color = "SystemButtonFace"
+            self.fg_color = "black"
+            self.button_color = "light gray"
+        elif self.theme == "Dark":
+            self.bg_color = "black"
+            self.fg_color = "white"
+            self.button_color = "gray"
+        self.master.configure(bg=self.bg_color)
+
+    def set_difficulty(self, difficulty, custom_rows, custom_cols, custom_mines):
         if difficulty == "Easy":
             self.rows = 8
             self.cols = 8
@@ -98,46 +168,52 @@ class MinesweeperGame:
             self.rows = 12
             self.cols = 12
             self.mines = 30
+        elif difficulty == "Custom":
+            self.rows = custom_rows
+            self.cols = custom_cols
+            self.mines = custom_mines
 
     def create_widgets(self):
-        self.top_frame = tk.Frame(self.master)
+        self.top_frame = tk.Frame(self.master, bg=self.bg_color)
         self.top_frame.pack(pady=10)
 
-        self.info_frame = tk.Frame(self.top_frame)
+        self.info_frame = tk.Frame(self.top_frame, bg=self.bg_color)
         self.info_frame.pack(side=tk.RIGHT)
 
-        self.mine_counter = tk.Label(self.info_frame, text=f"Mines left: {self.mines - self.flags}", font=("Helvetica", 12))
+        self.mine_counter = tk.Label(self.info_frame, text=f"Mines left: {self.mines - self.flags}", font=("Helvetica", 12), bg=self.bg_color, fg=self.fg_color)
         self.mine_counter.pack()
 
-        self.timer_label = tk.Label(self.info_frame, text="Time: 0", font=("Helvetica", 12))
+        self.timer_label = tk.Label(self.info_frame, text="Time: 0", font=("Helvetica", 12), bg=self.bg_color, fg=self.fg_color)
         self.timer_label.pack()
 
-        self.score_label = tk.Label(self.info_frame, text=f"Score: {self.score}", font=("Helvetica", 12))
+        self.score_label = tk.Label(self.info_frame, text=f"Score: {self.score}", font=("Helvetica", 12), bg=self.bg_color, fg=self.fg_color)
         self.score_label.pack()
 
-        self.board_frame = tk.Frame(self.master)
+        self.board_frame = tk.Frame(self.master, bg=self.bg_color)
         self.board_frame.pack()
 
         self.create_board_buttons()
 
-        self.control_frame = tk.Frame(self.master)
+        self.control_frame = tk.Frame(self.master, bg=self.bg_color)
         self.control_frame.pack(pady=10)
 
         self.restart_button = tk.Button(self.control_frame, text="Restart", command=self.restart_game, font=("Helvetica", 12), bg="orange")
         self.restart_button.pack(side=tk.LEFT, padx=5)
 
-        self.pause_button = tk.Button(self.control_frame, text="Pause", command=self.pause_timer, font=("Helvetica", 12), bg="yellow")
+        self.pause_button = tk.Button(self.control_frame, text="Pause", command=self.pause, font=("Helvetica", 12), bg="yellow")
         self.pause_button.pack(side=tk.LEFT, padx=5)
 
-        self.resume_button = tk.Button(self.control_frame, text="Resume", command=self.resume_timer, font=("Helvetica", 12), bg="light green")
+        self.resume_button = tk.Button(self.control_frame, text="Resume", command=self.resume, font=("Helvetica", 12), bg="green")
         self.resume_button.pack(side=tk.LEFT, padx=5)
+
+        self.return_button = tk.Button(self.control_frame, text="Return to Menu", command=self.return_to_menu, font=("Helvetica", 12), bg="red")
+        self.return_button.pack(side=tk.LEFT, padx=5)
 
     def create_board_buttons(self):
         for r in range(self.rows):
             for c in range(self.cols):
-                button = tk.Button(self.board_frame, width=2, height=1, font=("Helvetica", 10, "bold"))
-                button.bind('<Button-1>', lambda e, r=r, c=c: self.on_left_click(r, c))
-                button.bind('<Button-3>', lambda e, r=r, c=c: self.on_right_click(r, c))
+                button = tk.Button(self.board_frame, text="", width=3, height=1, bg=self.button_color, command=lambda r=r, c=c: self.reveal_cell(r, c))
+                button.bind("<Button-3>", lambda event, r=r, c=c: self.toggle_flag(r, c))
                 button.grid(row=r, column=c)
                 self.buttons[r][c] = button
 
@@ -146,87 +222,71 @@ class MinesweeperGame:
         while mines_placed < self.mines:
             r = random.randint(0, self.rows - 1)
             c = random.randint(0, self.cols - 1)
-            if self.board[r][c] != -1:
+            if self.board[r][c] == 0:
                 self.board[r][c] = -1
                 mines_placed += 1
-    
+
     def calculate_adjacent_mines(self):
-        directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
         for r in range(self.rows):
             for c in range(self.cols):
                 if self.board[r][c] == -1:
                     continue
-                mine_count = 0
-                for dr, dc in directions:
-                    rr, cc = r + dr, c + dc
-                    if 0 <= rr < self.rows and 0 <= cc < self.cols and self.board[rr][cc] == -1:
-                        mine_count += 1
-                self.board[r][c] = mine_count
-
-    def on_left_click(self, r, c):
-        if not self.timer_running:
-            self.start_timer()
-        
-        if self.buttons[r][c]['text'] == 'F' or self.buttons[r][c]['state'] == 'disabled':
-            return
-        
-        if self.board[r][c] == -1:
-            self.buttons[r][c].config(text='*', bg='red')
-            self.reveal_mines()
-            self.stop_timer()
-            messagebox.showinfo("Game Over", "You clicked on a mine!")
-            self.update_leaderboard()
-        else:
-            self.reveal_cell(r, c)
-            if self.check_win():
-                self.stop_timer()
-                messagebox.showinfo("Congratulations", "You win!")
-                self.update_leaderboard()
-
-    def on_right_click(self, r, c):
-        if self.buttons[r][c]['text'] == 'F':
-            self.buttons[r][c].config(text='', bg='SystemButtonFace')
-            self.flags -= 1
-            self.score -= 5
-        else:
-            self.buttons[r][c].config(text='F', bg='yellow')
-            self.flags += 1
-            self.score += 5
-        self.mine_counter.config(text=f"Mines left: {self.mines - self.flags}")
-        self.score_label.config(text=f"Score: {self.score}")
+                adjacent_mines = 0
+                for dr in (-1, 0, 1):
+                    for dc in (-1, 0, 1):
+                        if 0 <= r + dr < self.rows and 0 <= c + dc < self.cols and self.board[r + dr][c + dc] == -1:
+                            adjacent_mines += 1
+                self.board[r][c] = adjacent_mines
 
     def reveal_cell(self, r, c):
-        if self.buttons[r][c]['state'] == 'disabled':
+        if not self.timer_running:
+            self.start_timer()
+
+        if self.buttons[r][c]["state"] == tk.DISABLED:
             return
-        color_map = {1: 'blue', 2: 'green', 3: 'red', 4: 'purple', 5: 'maroon', 6: 'turquoise', 7: 'black', 8: 'gray'}
+
+        if self.board[r][c] == -1:
+            self.game_over(False)
+            return
+
+        self.reveal_button(r, c)
+
         if self.board[r][c] == 0:
-            self.buttons[r][c].config(text='', bg='light gray', state='disabled', relief=tk.SUNKEN)
-        else:
-            self.buttons[r][c].config(text=str(self.board[r][c]), fg=color_map.get(self.board[r][c], 'black'), bg='light gray', state='disabled', relief=tk.SUNKEN)
-            self.score += self.board[r][c] * 10
+            self.reveal_adjacent_cells(r, c)
+
+        if self.revealed_cells == self.rows * self.cols - self.mines:
+            self.game_over(True)
+
+    def reveal_button(self, r, c):
+        self.buttons[r][c].config(state=tk.DISABLED, relief=tk.SUNKEN)
+        self.buttons[r][c].config(bg=self.button_color)
         self.revealed_cells += 1
+        self.score += 1
         self.score_label.config(text=f"Score: {self.score}")
-        if self.board[r][c] == 0:
-            directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-            for dr, dc in directions:
-                rr, cc = r + dr, c + dc
-                if 0 <= rr < self.rows and 0 <= cc < self.cols:
-                    self.reveal_cell(rr, cc)
 
-    def reveal_mines(self):
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if self.board[r][c] == -1 and self.buttons[r][c]['text'] != 'F':
-                    self.buttons[r][c].config(text='*', bg='red')
-                elif self.board[r][c] != -1 and self.buttons[r][c]['text'] == 'F':
-                    self.buttons[r][c].config(text='X', bg='red')
+        if self.board[r][c] > 0:
+            self.buttons[r][c].config(text=str(self.board[r][c]))
 
-    def check_win(self):
-        return self.revealed_cells == self.rows * self.cols - self.mines
+    def reveal_adjacent_cells(self, r, c):
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < self.rows and 0 <= nc < self.cols and self.buttons[nr][nc]["state"] != tk.DISABLED:
+                    self.reveal_cell(nr, nc)
+
+    def toggle_flag(self, r, c):
+        if self.buttons[r][c]["state"] == tk.DISABLED:
+            return
+        if self.buttons[r][c].cget("text") == "":
+            self.buttons[r][c].config(text="F", bg="red")
+            self.flags += 1
+        else:
+            self.buttons[r][c].config(text="", bg=self.button_color)
+            self.flags -= 1
+        self.mine_counter.config(text=f"Mines left: {self.mines - self.flags}")
 
     def start_timer(self):
         self.timer_running = True
-        self.time_elapsed = 0
         self.update_timer()
 
     def update_timer(self):
@@ -235,56 +295,37 @@ class MinesweeperGame:
             self.timer_label.config(text=f"Time: {self.time_elapsed}")
             self.master.after(1000, self.update_timer)
 
-    def stop_timer(self):
+    def pause(self):
         self.timer_running = False
 
-    def pause_timer(self):
-        self.timer_running = False
-
-    def resume_timer(self):
+    def resume(self):
         if not self.timer_running:
             self.timer_running = True
             self.update_timer()
 
-    def restart_game(self):
+    def game_over(self, win):
+        self.timer_running = False
+        result = "You Win!" if win else "Game Over!"
+        stats = f"Time taken: {self.time_elapsed} seconds\nCells revealed: {self.revealed_cells}\nScore: {self.score}"
+        messagebox.showinfo(result, stats)
         self.master.destroy()
         root = tk.Tk()
         StartMenu(root)
         root.mainloop()
 
-    def update_leaderboard(self):
-        try:
-            with open("leaderboard.json", "r") as file:
-                leaderboard = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError):
-            leaderboard = []
+    def restart_game(self):
+        self.master.destroy()
+        root = tk.Tk()
+        MinesweeperGame(root, self.difficulty, self.theme, self.rows, self.cols, self.mines)
+        root.mainloop()
 
-        leaderboard.append({"time": self.time_elapsed, "score": self.score})
-        leaderboard = sorted(leaderboard, key=lambda x: (x["time"], -x["score"]))[:10]
+    def return_to_menu(self):
+        self.master.destroy()
+        root = tk.Tk()
+        StartMenu(root)
+        root.mainloop()
 
-        with open("leaderboard.json", "w") as file:
-            json.dump(leaderboard, file, indent=4)
-
-        self.show_leaderboard(leaderboard)
-
-    def show_leaderboard(self, leaderboard):
-        leaderboard_window = tk.Toplevel(self.master)
-        leaderboard_window.title("Leaderboard")
-        
-        leaderboard_text = "Leaderboard:\n\n"
-        for idx, entry in enumerate(leaderboard):
-            leaderboard_text += f"{idx + 1}. Time: {entry['time']}s, Score: {entry['score']}\n"
-        
-        leaderboard_label = tk.Label(leaderboard_window, text=leaderboard_text, font=("Helvetica", 12), justify=tk.LEFT)
-        leaderboard_label.pack(pady=10, padx=10)
-        
-        close_button = tk.Button(leaderboard_window, text="Close", command=leaderboard_window.destroy, font=("Helvetica", 12), bg="red", fg="white")
-        close_button.pack(pady=10)
-
-def main():
+if __name__ == "__main__":
     root = tk.Tk()
     app = StartMenu(root)
     root.mainloop()
-
-if __name__ == "__main__":
-    main()
