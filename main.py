@@ -2,12 +2,44 @@ import tkinter as tk
 import random
 from tkinter import messagebox
 
-class MinesweeperGame:
+class StartMenu:
     def __init__(self, master):
         self.master = master
-        self.rows = 10
-        self.cols = 10
-        self.mines = 20
+        self.master.title("Minesweeper - Start Menu")
+        self.difficulty = "Medium"
+        
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.title_label = tk.Label(self.master, text="Minesweeper", font=("Helvetica", 20))
+        self.title_label.pack(pady=10)
+
+        self.difficulty_frame = tk.Frame(self.master)
+        self.difficulty_frame.pack(pady=10)
+
+        self.difficulty_var = tk.StringVar()
+        self.difficulty_var.set("Medium")
+
+        tk.Radiobutton(self.difficulty_frame, text="Easy", variable=self.difficulty_var, value="Easy").pack(side=tk.LEFT)
+        tk.Radiobutton(self.difficulty_frame, text="Medium", variable=self.difficulty_var, value="Medium").pack(side=tk.LEFT)
+        tk.Radiobutton(self.difficulty_frame, text="Hard", variable=self.difficulty_var, value="Hard").pack(side=tk.LEFT)
+
+        self.start_button = tk.Button(self.master, text="Start Game", command=self.start_game)
+        self.start_button.pack(pady=20)
+
+    def start_game(self):
+        self.difficulty = self.difficulty_var.get()
+        self.master.destroy()
+        root = tk.Tk()
+        MinesweeperGame(root, self.difficulty)
+        root.mainloop()
+
+class MinesweeperGame:
+    def __init__(self, master, difficulty):
+        self.master = master
+        self.master.title("Minesweeper")
+        
+        self.set_difficulty(difficulty)
         
         self.board = [[0] * self.cols for _ in range(self.rows)]
         self.buttons = [[None] * self.cols for _ in range(self.rows)]
@@ -21,51 +53,7 @@ class MinesweeperGame:
         self.place_mines()
         self.calculate_adjacent_mines()
 
-    def create_widgets(self):
-        self.difficulty_frame = tk.Frame(self.master)
-        self.difficulty_frame.pack()
-
-        self.difficulty_var = tk.StringVar()
-        self.difficulty_var.set("Medium")
-
-        tk.Radiobutton(self.difficulty_frame, text="Easy", variable=self.difficulty_var, value="Easy", command=self.set_difficulty).pack(side=tk.LEFT)
-        tk.Radiobutton(self.difficulty_frame, text="Medium", variable=self.difficulty_var, value="Medium", command=self.set_difficulty).pack(side=tk.LEFT)
-        tk.Radiobutton(self.difficulty_frame, text="Hard", variable=self.difficulty_var, value="Hard", command=self.set_difficulty).pack(side=tk.LEFT)
-
-        self.board_frame = tk.Frame(self.master)
-        self.board_frame.pack()
-        
-        self.create_board_buttons()
-
-        self.mine_counter = tk.Label(self.master, text=f"Mines left: {self.mines - self.flags}")
-        self.mine_counter.pack()
-
-        self.timer_label = tk.Label(self.master, text="Time: 0")
-        self.timer_label.pack()
-
-        self.score_label = tk.Label(self.master, text=f"Score: {self.score}")
-        self.score_label.pack()
-
-        self.restart_button = tk.Button(self.master, text="Restart", command=self.restart_game)
-        self.restart_button.pack()
-
-        self.pause_button = tk.Button(self.master, text="Pause", command=self.pause_timer)
-        self.pause_button.pack()
-
-        self.resume_button = tk.Button(self.master, text="Resume", command=self.resume_timer)
-        self.resume_button.pack()
-
-    def create_board_buttons(self):
-        for r in range(self.rows):
-            for c in range(self.cols):
-                button = tk.Button(self.board_frame, width=2, height=1)
-                button.bind('<Button-1>', lambda e, r=r, c=c: self.on_left_click(r, c))
-                button.bind('<Button-3>', lambda e, r=r, c=c: self.on_right_click(r, c))
-                button.grid(row=r, column=c)
-                self.buttons[r][c] = button
-        
-    def set_difficulty(self):
-        difficulty = self.difficulty_var.get()
+    def set_difficulty(self, difficulty):
         if difficulty == "Easy":
             self.rows = 8
             self.cols = 8
@@ -78,7 +66,48 @@ class MinesweeperGame:
             self.rows = 12
             self.cols = 12
             self.mines = 30
-        self.restart_game()
+
+    def create_widgets(self):
+        self.top_frame = tk.Frame(self.master)
+        self.top_frame.pack(pady=10)
+
+        self.info_frame = tk.Frame(self.top_frame)
+        self.info_frame.pack(side=tk.RIGHT)
+
+        self.mine_counter = tk.Label(self.info_frame, text=f"Mines left: {self.mines - self.flags}")
+        self.mine_counter.pack()
+
+        self.timer_label = tk.Label(self.info_frame, text="Time: 0")
+        self.timer_label.pack()
+
+        self.score_label = tk.Label(self.info_frame, text=f"Score: {self.score}")
+        self.score_label.pack()
+
+        self.board_frame = tk.Frame(self.master)
+        self.board_frame.pack()
+
+        self.create_board_buttons()
+
+        self.control_frame = tk.Frame(self.master)
+        self.control_frame.pack(pady=10)
+
+        self.restart_button = tk.Button(self.control_frame, text="Restart", command=self.restart_game)
+        self.restart_button.pack(side=tk.LEFT, padx=5)
+
+        self.pause_button = tk.Button(self.control_frame, text="Pause", command=self.pause_timer)
+        self.pause_button.pack(side=tk.LEFT, padx=5)
+
+        self.resume_button = tk.Button(self.control_frame, text="Resume", command=self.resume_timer)
+        self.resume_button.pack(side=tk.LEFT, padx=5)
+
+    def create_board_buttons(self):
+        for r in range(self.rows):
+            for c in range(self.cols):
+                button = tk.Button(self.board_frame, width=2, height=1)
+                button.bind('<Button-1>', lambda e, r=r, c=c: self.on_left_click(r, c))
+                button.bind('<Button-3>', lambda e, r=r, c=c: self.on_right_click(r, c))
+                button.grid(row=r, column=c)
+                self.buttons[r][c] = button
 
     def place_mines(self):
         mines_placed = 0
@@ -157,7 +186,7 @@ class MinesweeperGame:
         return self.revealed_cells == self.rows * self.cols - self.mines
 
     def restart_game(self):
-        self.board_frame.destroy()  
+        self.board_frame.destroy()  # Clear the existing board frame
         self.board_frame = tk.Frame(self.master)
         self.board_frame.pack()
         
@@ -180,6 +209,12 @@ class MinesweeperGame:
         self.timer_running = True
         self.update_timer()
 
+    def update_timer(self):
+        if self.timer_running:
+            self.time_elapsed += 1
+            self.timer_label.config(text=f"Time: {self.time_elapsed}")
+            self.master.after(1000, self.update_timer)
+
     def stop_timer(self):
         self.timer_running = False
 
@@ -191,16 +226,9 @@ class MinesweeperGame:
             self.timer_running = True
             self.update_timer()
 
-    def update_timer(self):
-        if self.timer_running:
-            self.time_elapsed += 1
-            self.timer_label.config(text=f"Time: {self.time_elapsed}")
-            self.master.after(1000, self.update_timer)
-
 def main():
     root = tk.Tk()
-    root.title("Minesweeper")
-    game = MinesweeperGame(root)
+    StartMenu(root)
     root.mainloop()
 
 if __name__ == "__main__":
